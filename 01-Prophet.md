@@ -322,3 +322,74 @@ fcst = m.predict(future)
 fig = m.plot(fcst)
 ```
 
+##  诊断
+
+1. 交叉验证
+   - `initial` 代表了一开始的时间是多少
+   - `period` 代表每隔多长时间设置一个cutoff
+   - `horizon` 代表每次从cutoff往后预测多少天
+
+```python
+from prophet.diagnostics import cross_validation
+df_cv = cross_validation(m, initial='730 days', period='180 days', horizon='365 days')
+df_cv.head()
+
+
+cutoffs = pd.to_datetime(['2013-02-15', '2013-08-15', '2014-02-15'])
+df_cv2 = cross_validation(m, cutoffs=cutoffs, horizon='365 days')
+
+from prophet.diagnostics import performance_metrics
+df_p = performance_metrics(df_cv)
+df_p.head()
+
+from prophet.plot import plot_cross_validation_metric
+fig = plot_cross_validation_metric(df_cv, metric='mape')
+```
+
+2. 调参
+
+```python
+import itertools
+import numpy as np
+import pandas as pd
+
+param_grid = {  
+    'changepoint_prior_scale': [0.001, 0.01, 0.1, 0.5],
+    'seasonality_prior_scale': [0.01, 0.1, 1.0, 10.0],
+}
+
+# Generate all combinations of parameters
+all_params = [dict(zip(param_grid.keys(), v)) for v in itertools.product(*param_grid.values())]
+rmses = []  # Store the RMSEs for each params here
+
+# Use cross validation to evaluate all parameters
+for params in all_params:
+    m = Prophet(**params).fit(df)  # Fit model with given params
+    df_cv = cross_validation(m, cutoffs=cutoffs, horizon='30 days', parallel="processes")
+    df_p = performance_metrics(df_cv, rolling_window=1)
+    rmses.append(df_p['rmse'].values[0])
+
+# Find the best parameters
+tuning_results = pd.DataFrame(all_params)
+tuning_results['rmse'] = rmses
+print(tuning_results)
+
+best_params = all_params[np.argmin(rmses)]
+print(best_params)
+```
+
+## 更多主题
+
+1. 保存模型
+
+```python
+import json
+from prophet.serialize import model_to_json, model_from_json
+
+with open('serialized_model.json', 'w') as fout:
+    json.dump(model_to_json(m), fout)  # Save model
+
+with open('serialized_model.json', 'r') as fin:
+    m = model_from_json(json.load(fin))  # Load model
+```
+
