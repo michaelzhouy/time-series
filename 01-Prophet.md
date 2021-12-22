@@ -239,7 +239,7 @@ fig = m.plot_components(forecast)
 
 ## 异常值
 
-1. 中间的异常值，不影响预测
+1. 中间的异常值, 不影响预测
 
 ```python
 df = pd.read_csv('../examples/example_wp_log_R_outliers1.csv')
@@ -249,13 +249,13 @@ future = m.make_future_dataframe(periods=1096)
 forecast = m.predict(future)
 fig = m.plot(forecast)
 
-# 历史数据中有缺失值, 没有太大影响到预测
+# 历史数据的中间有缺失值, 没有太大影响到预测
 df.loc[(df['ds'] > '2010-01-01') & (df['ds'] < '2011-01-01'), 'y'] = None
 model = Prophet().fit(df)
 fig = model.plot(model.predict(future))
 ```
 
-2. 尾部的缺失值，影响预测
+2. 尾部的缺失值, 影响预测
 
 ```python
 df = pd.read_csv('../examples/example_wp_log_R_outliers2.csv')
@@ -265,8 +265,60 @@ future = m.make_future_dataframe(periods=1096)
 forecast = m.predict(future)
 fig = m.plot(forecast)
 
+# 历史数据的尾部有缺失值, 影响预测
 df.loc[(df['ds'] > '2015-06-01') & (df['ds'] < '2015-06-30'), 'y'] = None
 m = Prophet().fit(df)
 fig = m.plot(m.predict(future))
+```
+
+## 非日数据
+
+1. 子日数据, `ds`列要求是`YYYY-MM-DD HH:MM:SS` 格式, 并且将自动添加每天季节性
+
+```python
+# 5分钟级别
+df = pd.read_csv('../examples/example_yosemite_temps.csv')
+m = Prophet(changepoint_prior_scale=0.01).fit(df)
+future = m.make_future_dataframe(periods=300, freq='H')
+fcst = m.predict(future)
+fig = m.plot(fcst)
+
+fig = m.plot_components(fcst)
+```
+
+2. 有固定间隔的数据
+
+```python
+df2 = df.copy()
+df2['ds'] = pd.to_datetime(df2['ds'])
+df2 = df2[df2['ds'].dt.hour < 6] # 只有6点之前的数据
+m = Prophet().fit(df2)
+future = m.make_future_dataframe(periods=300, freq='H')
+fcst = m.predict(future)
+fig = m.plot(fcst)
+
+future2 = future.copy()
+future2 = future2[future2['ds'].dt.hour < 6] # 预测也只需预测6点之前的数据
+fcst = m.predict(future2)
+fig = m.plot(fcst)
+```
+
+3. 月数据
+
+```python
+df = pd.read_csv('../examples/example_retail_sales.csv') # 月数据
+m = Prophet(seasonality_mode='multiplicative').fit(df)
+future = m.make_future_dataframe(periods=3652) # 预测10年, 每日预测
+fcst = m.predict(future)
+fig = m.plot(fcst)
+
+
+m = Prophet(seasonality_mode='multiplicative', mcmc_samples=300).fit(df)
+fcst = m.predict(future)
+fig = m.plot_components(fcst)
+
+future = m.make_future_dataframe(periods=120, freq='MS') # 预测每月第一天
+fcst = m.predict(future)
+fig = m.plot(fcst)
 ```
 
