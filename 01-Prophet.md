@@ -132,7 +132,7 @@ forecast = m.predict(future)
 fig = m.plot_components(forecast)
 ```
 
-3. 自定义季节性, 默认添加了每周,每年的季节性, 通过参数`add_seasonality`来添加季节性
+3. 自定义季节性, 默认添加了每周, 每年的季节性, 通过参数`add_seasonality`来添加季节性
 
 ```python
 # 每月的季节性替换每周的季节性
