@@ -108,7 +108,7 @@ superbowls = pd.DataFrame({
     'lower_window': 0,
     'upper_window': 1,
 })
-holidays = pd.concat((playoffs, superbowls))
+holidays = pd.concat([playoffs, superbowls])
 m = Prophet(holidays=holidays)
 forecast = m.fit(df).predict(future)
 
@@ -126,7 +126,7 @@ m = Prophet(holidays=holidays)
 m.add_country_holidays(country_name='CN')
 m.fit(df)
 # 节假日名称
-m.train_holiday_names
+print(m.train_holiday_names)
 
 forecast = m.predict(future)
 fig = m.plot_components(forecast)
